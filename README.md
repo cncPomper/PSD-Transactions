@@ -22,3 +22,8 @@ export PATH="${HOME}/bin:${HOME}"
 ```bash
 source .bashrc
 ```
+
+## Init to DB
+```bash
+pgcli -h localhost -p 5432 -u postgres -d postgres
+```
