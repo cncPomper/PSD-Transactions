@@ -14,7 +14,7 @@ wget https://github.com/docker/compose/releases/download/v2.30.0/docker-compose-
 chmod +x docker-compose
 ```
 ```bash
-nano .bashrc
+cd ~ && nano .bashrc
 ```
 ```bash
 export PATH="${HOME}/bin:${HOME}"
