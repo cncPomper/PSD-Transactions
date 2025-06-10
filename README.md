@@ -49,3 +49,25 @@ CREATE TABLE transactions (
              transaction_time TIMESTAMP
          )
 ```
+
+## Create venv
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install kafka-python
+```
+
+## Launch a job
+```bash
+docker-compose exec jobmanager ./bin/flink run -py /opt/src/job/alarm_job.py --pyFiles /opt/src -d
+```
+
+## Launch a producer
+```bash
+python3 src/producers/card_producer.py
+```
+
+## Launch a consumer
+```bash
+python3 src/consumers/consumer.py
+```

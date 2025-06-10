@@ -17,4 +17,4 @@ for msg in consumer:
 	amount = data['amount']
 	card_limit = data['card_limit']
 	if amount > card_limit:
-		print(f"There is a scamer or hacker in position {data['location_1']}/{data['location_2']}")
+		print(f"There is a scamer or hacker. The amount is {amount}. The position {data['location_1']}/{data['location_2']}")
