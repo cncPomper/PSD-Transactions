@@ -31,11 +31,11 @@ Create a table
 ```
 CREATE TABLE transactions (
              card_id VARCHAR(50) NOT NULL,
-             user_id vARCHAR(50) NOT NULL,
+             user_id VARCHAR(50) NOT NULL,
              location_1 DECIMAL(10, 6),
              location_2 DECIMAL(10, 6),
-             amount DECIMAL(15, 2) NOT NULL,
-             card_limit DECIMAL(15, 2),
+             amount INTEGER,
+             card_limit INTEGER,
              transaction_time TIMESTAMP
          )
 ```
