@@ -39,7 +39,16 @@ pgcli -h localhost -p 5432 -u postgres -d postgres
 ```
 Create a table
 ```
-CREATE TABLE transactions (card_id INTEGER NOT NULL,user_id INTEGER NOT NULL,location_1 DECIMAL(10, 6),location_2 DECIMAL(10, 6),amount DECIMAL(15, 2),card_limit INTEGER,transaction_time DECIMAL(17, 4), anomaly_flag VARCHAR(1))
+CREATE TABLE transactions (
+	card_id INTEGER NOT NULL,
+	user_id INTEGER NOT NULL,
+	location_1 DECIMAL(10, 6),
+	location_2 DECIMAL(10, 6),
+	amount DECIMAL(15, 2),
+	card_limit INTEGER,
+	transaction_time DECIMAL(17, 4),
+	anomaly_flag VARCHAR(1)
+)
 ```
 
 ## Create venv
