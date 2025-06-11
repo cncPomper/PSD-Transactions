@@ -34,7 +34,7 @@ for msg in consumer:
 		timestamps_anomaly.append(timestamp)
 
 	else:
-		print('\t', data)
+		# print('\t', data)
 		amounts_good.append(amount)
 		timestamps_good.append(timestamp)
 	
@@ -46,4 +46,4 @@ for msg in consumer:
 	plt.ylabel('Wartosc transakcji')
 	plt.title('Anomalie transakcji')
 	plt.grid(True)
-	plt.pause(0.1) 
+	plt.pause(0.01) 

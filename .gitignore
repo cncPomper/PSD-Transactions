@@ -135,3 +135,4 @@ dump.sql
 # Personal workspace files
 .idea/*
 .vscode/*
+docker-compose

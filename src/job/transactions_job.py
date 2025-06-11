@@ -38,15 +38,106 @@ class AlarmApplyFunction(WindowFunction):
     def apply(self, key, window, inputs):
         card_id = key
 
-        self.cursor.execute(f"SELECT AVG(amount) FROM transactions WHERE anomaly_flag='N' AND card_id = {card_id}")
+        self.cursor.execute(f"SELECT AVG(query.amount), AVG(query.location_1), AVG(query.location_2) FROM (select * from transactions WHERE anomaly_flag='N' AND card_id = {card_id}) query")
         result = self.cursor.fetchone()
-        avg_amount = result[0] if result and result[0] is not None else 0
+        avg_amount = float(result[0] if result and result[0] is not None else 0)
+        avg_loc1 = float(result[1] if result and result[1] is not None else 0)
+        avg_loc2 = float(result[2] if result and result[2] is not None else 0)
 
-        for element in inputs:
-            if avg_amount > 0 and element['amount'] > 4 * avg_amount:
+        self.cursor.execute(f"SELECT AVG(obecne - poprzednie) as srednia FROM (select transaction_time obecne, LAG(transaction_time) OVER (ORDER BY transaction_time ASC) poprzednie from transactions WHERE anomaly_flag='N' AND card_id = {card_id}) query WHERE poprzednie IS NOT NULL")
+        result = self.cursor.fetchone()
+        avg_time = float(result[0] if result and result[0] is not None else 0)
+
+        self.cursor.execute(f"SELECT card_limit FROM (select * from transactions WHERE anomaly_flag='N' AND card_id = {card_id}) query order by transaction_time desc")
+        rresult = self.cursor.fetchone()
+        last_limit = float(result[0] if result and result[0] is not None else 0)
+
+        value_anomaly_flag = False
+        limit_anomaly_flag = False
+        geo_anomaly_flag = False
+        freq_anomaly_flag = False
+        clost_to_limit_anomaly_flag = False
+        card_copy_anomaly_flag = False
+        micro_anomaly_flag = False
+        rounded_anomaly_flag = False
+        identical_anomaly_flag = False
+        limit_change_anomaly_flag = False
+
+
+        for index, element in enumerate(inputs):
+            if avg_amount > 0 and element['amount']> 5 * avg_amount:
+                value_anomaly_flag = True
+
+            if element['amount'] > element['card_limit']:
+                limit_anomaly_flag = True
+
+            if len(list(inputs)) >= 10:
+                freq_anomaly_flag = True
+            
+            if last_limit != 0 and last_limit < element['card_limit'] and element['amount'] > 0.85*element['card_limit'] and element['amount'] < element['card_limit']:
+                limit_change_anomaly_flag = True
+
+            if avg_loc1 != 0 and avg_loc2 != 0 and (abs(element['location_1']-avg_loc1) > 2 or abs(element['location_2']-avg_loc2) > 2):
+                geo_anomaly_flag = True
+
+            avg_diffs = 0
+            transaction_times = [element_["transaction_time"] for element_ in inputs]
+            if len(list(inputs)) >= 3:
+                diffs = [transaction_times[i] - transaction_times[i-1] for i in range(1, len(transaction_times))]
+                avg_diffs = sum(diffs) / len(diffs)
+                if avg_diffs < 1/3 * avg_time:
+                    if element['amount'] > 0.95*element['card_limit'] and element['amount'] < element['card_limit']:
+                        clost_to_limit_anomaly_flag = True
+            
+            amounts_window = [element_["amount"] for element_ in inputs]
+            if len(list(inputs)) >= 3:
+                if sum(1 for amnt in amounts_window if amnt <= 1 ) >= 3:
+                    micro_anomaly_flag = True
+            
+            if len(list(inputs)) >= 3:
+                if sum(1 for amnt in amounts_window if amnt%100 == 0 ) >= 3:
+                    rounded_anomaly_flag = True
+            
+            if len(list(inputs)) >= 3:
+                if sum(1 for amnt in amounts_window if amnt == amounts_window[index]) >= 3:
+                    identical_anomaly_flag = True
+
+            locations_1 = [element_["location_1"] for element_ in inputs]
+            locations_2 = [element_["location_2"] for element_ in inputs]
+            max_diff = 0
+            if len(list(inputs)) >= 2:
+                for i in range(1, len(list(inputs))):
+                    diff1 = locations_1[i] - locations_1[i-1]
+                    diff2 = locations_2[i] - locations_2[i-1]
+                    max_diff = max(max_diff, max(diff1, diff2))
+                if max_diff > 3:
+                    card_copy_anomaly_flag = True
+
+
+
+
+            if clost_to_limit_anomaly_flag:
+                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "avg_time": avg_time, "avg_diffs": avg_diffs})
+            elif freq_anomaly_flag:
+                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "no_trx": len(list(inputs))})
+            elif limit_anomaly_flag:
                 yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount)})
+            elif geo_anomaly_flag:
+                yield json.dumps({"anomaly": 'Y', "event": element, "avg_loc1": float(avg_loc1), "avg_loc2": float(avg_loc2)})
+            elif value_anomaly_flag:
+                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount)})
+            elif micro_anomaly_flag:
+                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "amounts_window": amounts_window})
+            elif card_copy_anomaly_flag:
+                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "max_diff": max_diff})
+            elif rounded_anomaly_flag:
+                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "amounts_window": amounts_window})
+            elif identical_anomaly_flag:
+                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "amounts_window": amounts_window, "count": len(list(inputs))})
+            elif limit_change_anomaly_flag:
+                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "last_limit": last_limit})
             else:
-                yield json.dumps({"anomaly": 'N', "event": element, "avg_amount": float(avg_amount)})
+                yield json.dumps({"anomaly": 'N', "event": element, "avg_amount": float(avg_amount), "last_limit": last_limit})
 
 def parse_event(value):
     data = json.loads(value)
@@ -84,7 +175,7 @@ def main():
     # Apply tumbling window
     windowed = (
         stream
-        .key_by(lambda e: e['card_id'])  # one global window key
+        .key_by(lambda e: e['card_id']) 
         .window(TumblingProcessingTimeWindows.of(Time.seconds(10)))
         .apply(AlarmApplyFunction(), output_type=Types.STRING())
 

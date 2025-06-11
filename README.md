@@ -33,11 +33,26 @@ export PATH="${HOME}/bin:${HOME}"
 source .bashrc
 ```
 
-## Init to DB
+## Create venv
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install kafka-python
+```
+
+
+## Instrukcja uruchomienia
+### Uruchomienie docker-compose
+
+```bash
+docker-compose up
+```
+
+### Inicjalizacja struktur bazy danych
 ```bash
 pgcli -h localhost -p 5432 -u postgres -d postgres
 ```
-Create a table
+
 ```
 CREATE TABLE transactions (
 	card_id INTEGER NOT NULL,
@@ -51,24 +66,17 @@ CREATE TABLE transactions (
 )
 ```
 
-## Create venv
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install kafka-python
-```
-
-## Launch a job
+### Uruchomienie Joba Flink
 ```bash
 docker-compose exec jobmanager ./bin/flink run -py /opt/src/job/transactions_job.py --pyFiles /opt/src -d
 ```
 
-## Launch a producer
+### Uruchomienie producenta danych
 ```bash
 python3 src/producers/card_producer.py
 ```
 
-## Launch a consumer
+### Uruchomienie wizualizatora
 ```bash
 python3 src/consumers/consumer.py
 ```
