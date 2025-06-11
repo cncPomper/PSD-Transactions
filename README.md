@@ -39,15 +39,7 @@ pgcli -h localhost -p 5432 -u postgres -d postgres
 ```
 Create a table
 ```
-CREATE TABLE transactions (
-             card_id VARCHAR(50) NOT NULL,
-             user_id VARCHAR(50) NOT NULL,
-             location_1 DECIMAL(10, 6),
-             location_2 DECIMAL(10, 6),
-             amount INTEGER,
-             card_limit INTEGER,
-             transaction_time TIMESTAMP
-         )
+CREATE TABLE transactions (card_id INTEGER NOT NULL,user_id INTEGER NOT NULL,location_1 DECIMAL(10, 6),location_2 DECIMAL(10, 6),amount DECIMAL(15, 2),card_limit INTEGER,transaction_time DECIMAL(17, 4), anomaly_flag VARCHAR(1))
 ```
 
 ## Create venv
@@ -59,7 +51,7 @@ pip install kafka-python
 
 ## Launch a job
 ```bash
-docker-compose exec jobmanager ./bin/flink run -py /opt/src/job/alarm_job.py --pyFiles /opt/src -d
+docker-compose exec jobmanager ./bin/flink run -py /opt/src/job/transactions_job.py --pyFiles /opt/src -d
 ```
 
 ## Launch a producer

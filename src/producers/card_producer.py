@@ -6,7 +6,7 @@ from datetime import datetime
 
 from kafka import KafkaProducer
 
-from data_generator import apply_anomaly, generate_basic_data, User, Card
+from data_generator import apply_anomaly, generate_basic_data, User, Card, Anomalies
 
 
 def serializer(message):
@@ -34,22 +34,63 @@ if __name__ == "__main__":
 
     print("\nStarted Producer...\n")
     t0 = time.time()
-    for i in range(1, 10):
-        for card in cards:
+    for i in range(1, 100):
+        for card in cards[:5]:
             # Wygeneruj dane typowej transakcji
             data = generate_basic_data(card)
 
-            # Zastosuj anomalie
-            data, anomaly_flag = apply_anomaly(data, card)
+            anomaly = None
+            # Zastosuj anomalie, generujemy najpierw 3 poprawne petle
+            if i> 10:
+                data, anomaly = apply_anomaly(data, card)
+            
 
-            if anomaly_flag:
-                print(f"Producing normal transaction @{datetime.now()} | Message = {str(data)}")
+            if not anomaly:
+                print(f"\tNormal transaction @{datetime.now()} | Message = {str(data)}")
+                producer.send(topic_name, data)
             else:
-                print(f"Producing ANOMALY @{datetime.now()} | Message = {str(data)}")
+                if anomaly == Anomalies.FREQ_ANOMALY:
+                    for i in range(10):
+                        print(f"FREQ_ANOMALY @{datetime.now()} | Message = {str(data)}")
+                        producer.send(topic_name, data)
+                if anomaly == Anomalies.CLOSE_TO_LIMIT_ANOMALY:
+                    for i in range(3):
+                        print(f"CLOSE_TO_LIMIT_ANOMALY @{datetime.now()} | Message = {str(data)}")
+                        producer.send(topic_name, data)
+                        data['amount'] = data['amount'] - 0.01
+                if anomaly == Anomalies.CARD_COPY_ANOMALY:
+                    for i in range(2):
+                        print(f"CARD_COPY_ANOMALY @{datetime.now()} | Message = {str(data)}")
+                        producer.send(topic_name, data)
+                        data["ocation_1"] = data["location_1"] + 4 
+                        data["location_2"] = data["location_2"] + 4
+                if anomaly == Anomalies.MICRO_ANOMALY:
+                    for i in range(3):
+                        print(f"MICRO_ANOMALY @{datetime.now()} | Message = {str(data)}")
+                        producer.send(topic_name, data)
+                        data['amount'] = data['amount'] - 0.01
+                if anomaly == Anomalies.ROUNDED_ANOMALY:
+                    for i in range(3):
+                        print(f"ROUNDED_ANOMALY @{datetime.now()} | Message = {str(data)}")
+                        producer.send(topic_name, data)
+                        data['amount'] = data['amount'] + 100
+                if anomaly == Anomalies.IDENTICAL_ANOMALY:
+                    for i in range(3):
+                        print(f"IDENTICAL_ANOMALY @{datetime.now()} | Message = {str(data)}")
+                        producer.send(topic_name, data)
+                if anomaly == Anomalies.LIMIT_CHANGE_ANOMALY:
+                    for i in range(2):
+                        print(f"SUDDEN_LIMIT_CHANGE @{datetime.now()} | Message = {str(data)}")
+                        producer.send(topic_name, data)
+                        data["card_limit"] = data["card_limit"] * 10
+                        data["amount"] = data["card_limit"] * 0.9
 
-            producer.send(topic_name, data)
+                else:
+                    print(f"ANOMALY @{datetime.now()} | Message = {str(data)}")
+                    producer.send(topic_name, data)
 
-            time.sleep(0.05)
+            time.sleep(0.5)
+            
 
     producer.flush()
 
