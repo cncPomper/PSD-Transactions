@@ -49,14 +49,14 @@ class AlarmApplyFunction(WindowFunction):
         avg_time = float(result[0] if result and result[0] is not None else 0)
 
         self.cursor.execute(f"SELECT card_limit FROM (select * from transactions WHERE anomaly_flag='N' AND card_id = {card_id}) query order by transaction_time desc")
-        rresult = self.cursor.fetchone()
+        result = self.cursor.fetchone()
         last_limit = float(result[0] if result and result[0] is not None else 0)
 
         value_anomaly_flag = False
         limit_anomaly_flag = False
         geo_anomaly_flag = False
         freq_anomaly_flag = False
-        clost_to_limit_anomaly_flag = False
+        close_to_limit_anomaly_flag = False
         card_copy_anomaly_flag = False
         micro_anomaly_flag = False
         rounded_anomaly_flag = False
@@ -87,7 +87,7 @@ class AlarmApplyFunction(WindowFunction):
                 avg_diffs = sum(diffs) / len(diffs)
                 if avg_diffs < 1/3 * avg_time:
                     if element['amount'] > 0.95*element['card_limit'] and element['amount'] < element['card_limit']:
-                        clost_to_limit_anomaly_flag = True
+                        close_to_limit_anomaly_flag = True
             
             amounts_window = [element_["amount"] for element_ in inputs]
             if len(list(inputs)) >= 3:
@@ -113,31 +113,28 @@ class AlarmApplyFunction(WindowFunction):
                 if max_diff > 3:
                     card_copy_anomaly_flag = True
 
-
-
-
-            if clost_to_limit_anomaly_flag:
-                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "avg_time": avg_time, "avg_diffs": avg_diffs})
+            if limit_change_anomaly_flag:
+                yield json.dumps({"anomaly_name":"limit_change_anomaly_flag", "anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "last_limit": last_limit})
+            elif close_to_limit_anomaly_flag:
+                yield json.dumps({"anomaly_name":"close_to_limit_anomaly_flag", "anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "avg_time": avg_time, "avg_diffs": avg_diffs})
             elif freq_anomaly_flag:
-                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "no_trx": len(list(inputs))})
+                yield json.dumps({"anomaly_name":"freq_anomaly_flag", "anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "no_trx": len(list(inputs))})
             elif limit_anomaly_flag:
-                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount)})
-            elif geo_anomaly_flag:
-                yield json.dumps({"anomaly": 'Y', "event": element, "avg_loc1": float(avg_loc1), "avg_loc2": float(avg_loc2)})
-            elif value_anomaly_flag:
-                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount)})
+                yield json.dumps({"anomaly_name":"limit_anomaly_flag", "anomaly": 'Y', "event": element, "avg_amount": float(avg_amount)})
             elif micro_anomaly_flag:
-                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "amounts_window": amounts_window})
+                yield json.dumps({"anomaly_name":"micro_anomaly_flag", "anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "amounts_window": amounts_window})
             elif card_copy_anomaly_flag:
-                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "max_diff": max_diff})
+                yield json.dumps({"anomaly_name":"card_copy_anomaly_flag", "anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "max_diff": max_diff})
             elif rounded_anomaly_flag:
-                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "amounts_window": amounts_window})
+                yield json.dumps({"anomaly_name":"rounded_anomaly_flag", "anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "amounts_window": amounts_window})
             elif identical_anomaly_flag:
-                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "amounts_window": amounts_window, "count": len(list(inputs))})
-            elif limit_change_anomaly_flag:
-                yield json.dumps({"anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "last_limit": last_limit})
+                yield json.dumps({"anomaly_name":"identical_anomaly_flag", "anomaly": 'Y', "event": element, "avg_amount": float(avg_amount), "amounts_window": amounts_window, "count": len(list(inputs))})
+            elif geo_anomaly_flag:
+                yield json.dumps({"anomaly_name":"geo_anomaly_flag", "anomaly": 'Y', "event": element, "avg_loc1": float(avg_loc1), "avg_loc2": float(avg_loc2)})
+            elif value_anomaly_flag:
+                yield json.dumps({"anomaly_name":"value_anomaly_flag", "anomaly": 'Y', "event": element, "avg_amount": float(avg_amount)})
             else:
-                yield json.dumps({"anomaly": 'N', "event": element, "avg_amount": float(avg_amount), "last_limit": last_limit})
+                yield json.dumps({"anomaly_name":"none", "anomaly": 'N', "event": element, "avg_amount": float(avg_amount), "last_limit": last_limit})
 
 def parse_event(value):
     data = json.loads(value)
