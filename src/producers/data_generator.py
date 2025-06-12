@@ -45,7 +45,7 @@ def generate_basic_data(card: Card):
 
 
 def apply_anomaly(data, card):
-    if random.randint(1, 100) >= 90:
+    if random.randint(1, 100) >= 95:
         # Nalozenie anomalii
         anomaly = random.choice(list(Anomalies))
         if anomaly == Anomalies.VALUE_ANOMALY: #done
