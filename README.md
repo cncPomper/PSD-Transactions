@@ -10,6 +10,9 @@ Maciej Tymoftyjewicz i Piotr Kitlowski
 ![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-000?style=for-the-badge&logo=apachekafka)
 ![Apache Flink](https://img.shields.io/badge/Apache%20Flink-E6526F?style=for-the-badge&logo=Apache%20Flink&logoColor=white)
 
+### Architektura
+![Architektura](/imgs/architektura.png)
+
 ## Setup
 ```bash
 https://github.com/sindresorhus/guides/blob/main/docker-without-sudo.md
